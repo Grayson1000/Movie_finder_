@@ -4,8 +4,8 @@ start_server()
 
 set_website_title("Corgi Cafe")
 set_site_information(
-    author="Your Name",
-    description="Order snacks for very good dogs.",
+    author="Grayson",
+    description="Find a movie based on preferences",
     sources="Thanks to the Drafter docs and my study group.",
     planning=["plan.pdf", "design.pdf"],
     links=["https://github.com/your-username/your-repository"]
