@@ -54,6 +54,3 @@ def filter_movies(state:State)->Page:
         "Enter a length", SelectBox("length", ["Any", "Under 90","90 to 120","Over 120"], state.select_length),
         Button("Find Movies", "show_movies"),
         Button("Home", "index")])
-
-@route
-def show_movies (state: State, genre: str, rating: str, length: str) -> Page:
