@@ -1,5 +1,6 @@
 from drafter import *
 from dataclasses import dataclass
+start_server()
 
 set_website_title("Corgi Cafe")
 set_site_information(
