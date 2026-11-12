@@ -162,4 +162,4 @@ def remove_favorite(state: State, title: str) -> Page:
     return favorites(state)
 
 
-start_server(make_state())
+start_server()
