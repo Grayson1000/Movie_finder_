@@ -161,5 +161,4 @@ def remove_favorite(state: State, title: str) -> Page:
     state.favorite_movies = new_favorites
     return favorites(state)
 
-
-start_server()
+start_server(make_state(), in_debug_mode=False)
