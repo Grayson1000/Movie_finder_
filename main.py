@@ -51,7 +51,7 @@ def filter_movies(state:State)->Page:
         rating_choice = str(state.selected_rating)
     return Page(state, [Header("Find a movie"), "Enter a genre:", SelectBox("genre", ["Any", "Comedy", "Horror", "Action", "Romance", "Animation"], state.selected_genre),
         "Enter minimun rating (Out of 10):", SelectBox("rating", ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"], rating_choice),
-        "Enter a length", SelectBox("length", ["Any", "Under 90","90 to 120","Over 120"], state.select_length)
+        "Enter a length", SelectBox("length", ["Any", "Under 90","90 to 120","Over 120"], state.select_length),
         Button("Find Movies", "show_movies")
         Button("Home", "index")])
 
