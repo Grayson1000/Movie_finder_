@@ -1,7 +1,7 @@
 from drafter import *
 from dataclasses import dataclass
 
-set_website_title("Corgi Cafe")
+set_website_title("Movie Finder")
 set_site_information(
     author="Grayson",
     description="Find a movie based on preferences",
@@ -29,135 +29,145 @@ class State:
     selected_length: str
     filtered_movies: list[Movie]
 
-
-def create_movies() -> list[Movie]:
-    """Creates the available movies."""
-    return [
-        Movie("Toy Story", "Animation", 8, 81),
+def create_movies()->list[Movie]:
+    """Creates the list of available movies"""
+    return [Movie("Toy Story", "Animation", 8, 81),
         Movie("Spider-Man: Into the Spider-Verse", "Action", 9, 117),
-        Movie("The Incredibles", "Animation", 8, 115),
-        Movie("Finding Nemo", "Animation", 8, 100),
-        Movie("The Dark Knight", "Action", 9, 152),
-        Movie("The Notebook", "Romance", 7, 123),
-        Movie("Home Alone", "Comedy", 7, 103),
-        Movie("A Quiet Place", "Horror", 8, 90)
-    ]
+        Movie("The Incredibles", "Animation", 8, 115)]
 
-
-def make_state() -> State:
-    """Creates the starting state."""
+def make_state()-> State:
+    """Creates the starting state"""
     return State(create_movies(), [], "Any", 0, "Any", [])
-
 
 @route
 def index(state: State) -> Page:
-    return Page(state, [
-        Header("Movie Finder"),
-        "Find a movie to watch!",
-        Button("Find Movies", "filter_movies"),
-        Button("My Favorites", "favorites")
-    ])
+    """Shows the home page."""
+    return Page(state, [Header("Find a Movie"), "Find a movie to watch personalized to you", Button("Find Movies", "filter_movies"), Button("My Favorites", "favorites"), Button("About", "about")])
+
+@route
+def filter_movies(state: State) ->Page:
+    """Shows the page where users select their filters."""
+    rating_choice = "Any"
+    if state.selected_rating != 0:
+        rating_choice = str(state.selected_rating)
+    return Page(state, [Header("Find a Movie"), "Enter a genre:", SelectBox("genre", ["Any", "Comedy", "Horror", "Action", "Romance", "Animation"], state.selected_genre),
+        "Enter minimum rating (out of 10):", SelectBox("rating", ["Any", "1", "2", "3", "4", "5","6", "7", "8", "9", "10"], rating_choice),
+        "Enter a length:", SelectBox("length", ["Any", "Under 90 minutes", "90-120 minutes", "Over 120 minutes"], state.selected_length),
+        Button("Find Movies", "show_movies"),
+        Button("Home", "index")])
 
 
 @route
-def filter_movies(state: State) -> Page:
-    return Page(state, [
-        Header("Find a Movie"),
-        "Choose a genre:",
-        SelectBox("selected_genre", [
-            "Any", "Comedy", "Horror", "Action", "Romance", "Animation"
-        ]),
-        "Choose a minimum rating:",
-        SelectBox("selected_rating", [
-            "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10"
-        ]),
-        "Choose a length:",
-        SelectBox("selected_length", [
-            "Any", "Under 90", "90 to 120", "Over 120"
-        ]),
-        Button("Find Movies", "show_movies")
-    ])
+def show_movies(state: State, genre: str, rating: str,
+                length: str) -> Page:
+    """Finds movies that match the selected filters."""
+    state.selected_genre = genre
+    state.selected_length = length
 
+    if rating == "Any":
+        state.selected_rating = 0
+    else:
+        state.selected_rating = int(rating)
 
-@route
-def show_movies(state: State, selected_genre: str,
-                selected_rating: str, selected_length: str) -> Page:
-    state.selected_genre = selected_genre
-    state.selected_rating = int(selected_rating)
-    state.selected_length = selected_length
     state.filtered_movies = []
 
     for movie in state.movies:
-        if selected_genre == "Any" or movie.genre == selected_genre:
-            if movie.rating >= int(selected_rating):
-                if selected_length == "Any":
-                    state.filtered_movies.append(movie)
-                elif selected_length == "Under 90" and movie.length < 90:
-                    state.filtered_movies.append(movie)
-                elif selected_length == "90 to 120" and 90 <= movie.length <= 120:
-                    state.filtered_movies.append(movie)
-                elif selected_length == "Over 120" and movie.length > 120:
-                    state.filtered_movies.append(movie)
+        matches = True
 
-    contents = [
-        Header("Movie Results")
+        if state.selected_genre != "Any":
+            if movie.genre != state.selected_genre:
+                matches = False
+
+        if state.selected_rating > 0:
+            if movie.rating < state.selected_rating:
+                matches = False
+
+        if state.selected_length == "Under 90 minutes":
+            if movie.length >= 90:
+                matches = False
+
+        elif state.selected_length == "90-120 minutes":
+            if movie.length < 90 or movie.length > 120:
+                matches = False
+
+        elif state.selected_length == "Over 120 minutes":
+            if movie.length <= 120:
+                matches = False
+
+        if matches:
+            state.filtered_movies.append(movie)
+
+    content = [
+        Header("Movie Results"),
+        "Here are the movies that match your preferences."
     ]
 
     if len(state.filtered_movies) == 0:
-        contents.append("No movies found.")
+        content.append("No movies matched your filters.")
+
     else:
         for movie in state.filtered_movies:
-            contents.append(movie.title)
-            contents.append("Genre: " + movie.genre)
-            contents.append("Rating: " + str(movie.rating) + "/10")
-            contents.append("Length: " + str(movie.length) + " minutes")
-            contents.append(Button("Add to Favorites", "add_favorite", movie.title))
+            content.append(movie.title + " | " + movie.genre + " | Rating: " + str(movie.rating) +"/10 | " + str(movie.length) + " minutes")
 
-    contents.append(Button("Back to Filters", "filter_movies"))
-    contents.append(Button("Home", "index"))
+            content.append(Button("Add to Favorites","add_favorite",[Argument("movie_title", movie.title)]))
 
-    return Page(state, contents)
+    content.append(Button("Filter Again", "filter_movies"))
+    content.append(Button("My Favorites", "favorites"))
+    content.append(Button("Home", "index"))
+
+    return Page(state, content)
 
 
 @route
-def add_favorite(state: State, title: str) -> Page:
-    for movie in state.movies:
-        if movie.title == title:
-            if movie not in state.favorite_movies:
+def favorites(state: State) -> Page:
+    """Shows the saved movies"""
+    content = [Header("My Favorite Movies"),"Here are the movies you have saved."]
+    if len(state.favorite_movies) == 0:
+        content.append("You have not added any favorites yet.")
+    else:
+        for movie in state.favorite_movies:
+            content.append(movie.title + " | " + movie.genre + " | Rating: " + str(movie.rating) + "/10 | " + str(movie.length) + " minutes")
+            content.append(Button("Remove from Favorites", "remove_favorite",[Argument("movie_title", movie.title)]))
+    content.append(Button("Find More Movies", "filter_movies"))
+    content.append(Button("Home", "index"))
+
+    return Page(state, content)
+
+@route
+def add_favorite(state: State, movie_title: str) -> Page:
+    """Adds a movie to the favorites list"""
+    already_saved = False
+    for movie in state.favorite_movies:
+        if movie.title == movie_title:
+            already_saved = True
+    if not already_saved:
+        for movie in state.movies:
+            if movie.title == movie_title:
                 state.favorite_movies.append(movie)
 
     return favorites(state)
 
 
 @route
-def favorites(state: State) -> Page:
-    contents = [Header("My Favorites")]
+def remove_favorite(state: State, movie_title: str) -> Page:
+    """Removes a movie from the favorites list"""
+    remaining_favorites = []
+    for movie in state.favorite_movies:
+        if movie.title != movie_title:
+            remaining_favorites.append(movie)
 
-    if len(state.favorite_movies) == 0:
-        contents.append("You have no favorite movies yet.")
-    else:
-        for movie in state.favorite_movies:
-            contents.append(movie.title)
-            contents.append("Genre: " + movie.genre)
-            contents.append("Rating: " + str(movie.rating) + "/10")
-            contents.append("Length: " + str(movie.length) + " minutes")
-            contents.append(Button("Remove Favorite", "remove_favorite", movie.title))
+    state.favorite_movies = remaining_favorites
 
-    contents.append(Button("Find Movies", "filter_movies"))
-    contents.append(Button("Home", "index"))
-
-    return Page(state, contents)
+    return favorites(state)
 
 
 @route
-def remove_favorite(state: State, title: str) -> Page:
-    new_favorites = []
+def about(state: State) -> Page:
+    """Shows info about the website"""
+    return Page(state, [
+        Header("About Movie Finder"), "Movie Finder helps people decide what movie to watch.", "Users can filter movies by genre, rating, and length.", "Users can also save their favorite movies.",
+        Button("Find Movies", "filter_movies"),
+        Button("Home", "index")])
 
-    for movie in state.favorite_movies:
-        if movie.title != title:
-            new_favorites.append(movie)
 
-    state.favorite_movies = new_favorites
-    return favorites(state)
-
-start_server(make_state(), in_debug_mode=False)
+start_server(make_state())
