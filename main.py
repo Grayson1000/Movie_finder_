@@ -1,17 +1,6 @@
 from drafter import *
 from dataclasses import dataclass
-
-set_website_title("Movie Finder")
-set_site_information(
-    author="Grayson",
-    description="Find a movie based on preferences",
-    sources="Thanks to the Drafter docs and my study group.",
-    planning=["plan.pdf", "design.pdf"],
-    links=["https://github.com/your-username/your-repository"]
-)
-hide_debug_information()
-set_website_framed(False)
-
+from bakery import assert_equal
 
 @dataclass
 class Movie:
@@ -34,15 +23,29 @@ def create_movies()->list[Movie]:
     return [Movie("Toy Story", "Animation", 8, 81),
         Movie("Spider-Man: Into the Spider-Verse", "Action", 9, 117),
         Movie("The Incredibles", "Animation", 8, 115)]
+assert_equal(len(create_movies()), 3)
+assert_equal(create_movies()[0].title, "Toy Story")
+assert_equal(create_movies()[1].title, "Spider-Man: Into the Spider-Verse")
+assert_equal(create_movies()[2].title, "The Incredibles")
+
 
 def make_state()-> State:
     """Creates the starting state"""
     return State(create_movies(), [], "Any", 0, "Any", [])
+state = make_state()
+assert_equal(len(state.movies), 3)
+assert_equal(state.favorite_movies, [])
+assert_equal(state.selected_genre, "Any")
+assert_equal(state.selected_rating, 0)
+assert_equal(state.selected_length, "Any")
+assert_equal(state.filtered_movies, [])
 
 @route
 def index(state: State) -> Page:
     """Shows the home page."""
     return Page(state, [Header("Find a Movie"), "Find a movie to watch personalized to you", Button("Find Movies", "filter_movies"), Button("My Favorites", "favorites"), Button("About", "about")])
+state = make_state()
+assert_equal(type(index(state)), Page)
 
 @route
 def filter_movies(state: State) ->Page:
@@ -55,7 +58,8 @@ def filter_movies(state: State) ->Page:
         "Enter a length:", SelectBox("length", ["Any", "Under 90 minutes", "90-120 minutes", "Over 120 minutes"], state.selected_length),
         Button("Find Movies", "show_movies"),
         Button("Home", "index")])
-
+state = make_state()
+assert_equal(type(filter_movies(state)), Page)
 
 @route
 def show_movies(state: State, genre: str, rating: str,
@@ -116,7 +120,9 @@ def show_movies(state: State, genre: str, rating: str,
     content.append(Button("Home", "index"))
 
     return Page(state, content)
-
+state = make_state()
+show_movies(state, "Any", "Any", "Any")
+assert_equal(len(state.filtered_movies), 3)
 
 @route
 def favorites(state: State) -> Page:
@@ -130,8 +136,9 @@ def favorites(state: State) -> Page:
             content.append(Button("Remove from Favorites", "remove_favorite",[Argument("movie_title", movie.title)]))
     content.append(Button("Find More Movies", "filter_movies"))
     content.append(Button("Home", "index"))
-
     return Page(state, content)
+state = make_state()
+assert_equal(type(favorites(state)), Page)
 
 @route
 def add_favorite(state: State, movie_title: str) -> Page:
@@ -146,7 +153,9 @@ def add_favorite(state: State, movie_title: str) -> Page:
                 state.favorite_movies.append(movie)
 
     return favorites(state)
-
+state = make_state()
+add_favorite(state, "Toy Story")
+assert_equal(len(state.favorite_movies), 1)
 
 @route
 def remove_favorite(state: State, movie_title: str) -> Page:
@@ -159,6 +168,10 @@ def remove_favorite(state: State, movie_title: str) -> Page:
     state.favorite_movies = remaining_favorites
 
     return favorites(state)
+state = make_state()
+add_favorite(state, "Toy Story")
+remove_favorite(state, "Toy Story")
+assert_equal(len(state.favorite_movies), 0)
 
 
 @route
@@ -168,6 +181,7 @@ def about(state: State) -> Page:
         Header("About Movie Finder"), "Movie Finder helps people decide what movie to watch.", "Users can filter movies by genre, rating, and length.", "Users can also save their favorite movies.",
         Button("Find Movies", "filter_movies"),
         Button("Home", "index")])
-
+state = make_state()
+assert_equal(type(about(state)), Page)
 
 start_server(make_state())
